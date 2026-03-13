@@ -2,7 +2,7 @@ import { View, Text, SafeAreaView, StyleSheet, TouchableOpacity, ScrollView, Fla
 import { MaterialIcons } from "@expo/vector-icons";
 
 const Home = () => {
-  // 4. Logika Kalkulasi Attendance Summary
+  
   const totalPresent = history.filter(item => item.status === "Present").length;
   const totalAbsent = history.filter(item => item.status === "Absent").length;
 
@@ -12,7 +12,7 @@ const Home = () => {
         <Text style={styles.course}>{item.course}</Text>
         <Text style={styles.date}>{item.date}</Text>
       </View>
-      {/* 5. Improve History List dengan Ikon */}
+      
       <View style={styles.statusRow}>
         <MaterialIcons 
           name={item.status === "Present" ? "check-circle" : "cancel"} 
@@ -31,7 +31,7 @@ const Home = () => {
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Attendance App</Text>
 
-        {/* 2. Student Card (Sudah Update ke Data Kamu) */}
+       
         <View style={styles.card}>
           <View style={styles.icon}>
             <MaterialIcons name="person" size={40} color="#555" />
@@ -43,7 +43,7 @@ const Home = () => {
           </View>
         </View>
 
-        {/* Today's Class */}
+      
         <View style={styles.classCard}>
           <Text style={styles.subtitle}>Today's Class</Text>
           <Text>Mobile Programming</Text>
@@ -54,7 +54,7 @@ const Home = () => {
           </TouchableOpacity>
         </View>
 
-        {/* 3. New Section: Upcoming Class */}
+       
         <View style={styles.classCard}>
           <Text style={styles.subtitle}>Upcoming Class</Text>
           <Text>Software Engineering</Text>
@@ -62,7 +62,7 @@ const Home = () => {
           <Text>Room 402</Text>
         </View>
 
-        {/* 4. New Section: Attendance Summary */}
+        
         <View style={styles.summaryCard}>
           <Text style={styles.subtitle}>Attendance Summary</Text>
           <View style={styles.summaryRow}>
@@ -89,7 +89,7 @@ const Home = () => {
   );
 };
 
-// 1. Tambah 20+ additional records
+
 const history = [
   { id: "1", course: "Mobile Programming", date: "2026-03-01", status: "Present" },
   { id: "2", course: "Database System", date: "2026-03-02", status: "Present" },
