@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo,useRef } from "react";
 import { 
   View, Text, SafeAreaView, StyleSheet,
   TouchableOpacity,
   ScrollView,
   FlatList,
-  Alert 
+  Alert , TextInput
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
@@ -14,6 +14,7 @@ const initialHistory = [
   { id: "1", course: "Web Programming", date: "2026-03-01", status: "Present" },
   { id: "2", course: "Database System", date: "2026-03-02", status: "Present" },
   { id: "3", course: "Mobile Programming", date: "2026-03-02", status: "Absent" },
+  { id: "4", course: "Structure Data", date: "2026-03-02", status: "Absent" },
 ];
 
 const Home = () => {
@@ -25,6 +26,20 @@ const Home = () => {
 
   // 3. STATE UNTUK JAM DIGITAL
   const [currentTime, setCurrentTime] = useState('Memuat jam...');
+
+  //4. STATE & REF UNTUK INPUT CATATAN (Contoh penggunaan useRef)
+  const [note, setNote] = useState('');
+  const noteInputRef= useRef(null);
+
+  // 5. OPTIMASI KOMPUTASI DENGAN useMemo
+  const attendanceStats = useMemo(() => {
+    console.log("Menghitung ulang statistik kehadiran...");
+    const presentCount = historyData.filter(item => item.status === 'Present').length;
+    const absentCount = historyData.filter(item => item.status === 'Absent').length;
+
+    return { totalPresent: presentCount, totalAbsent: absentCount };
+  }, [historyData]);
+
 
   // EFEK SIKLUS HIDUP (Mounting & Unmounting)
   useEffect(() => {
@@ -43,27 +58,32 @@ const Home = () => {
   }, []); // Array kosong [] artinya jalankan hanya satu kali saat awal dibuka
 
   // FUNGSI LOGIKA ABSEN
-  const handleCheckIn = () => {
-    if (isCheckedIn) {
-      Alert.alert("Perhatian", "Anda sudah melakukan Check In untuk kelas ini.");
-      return;
-    }
+ 
+const handleCheckIn = () => {
+  if (isCheckedIn) {
+    Alert.alert("Perhatian", "Anda sudah melakukan Check In.");
+    return;
+  }
 
-    // 1. Buat data presensi baru
-    const newAttendance = {
-      id: Date.now().toString(), // Buat ID unik dari timestamp
-      course: "Mobile Programming",
-      date: new Date().toLocaleDateString('id-ID'), // Tanggal hari ini
-      status: "Present"
-    };
+  // Validasi Catatan menggunakan useRef
+  if (note.trim() === '') {
+    Alert.alert("Peringatan", "Catatan kehadiran wajib diisi!");
+    noteInputRef.current.focus(); // <-- Sihir useRef: Memaksa kursor pindah ke input
+    return;
+  }
 
-    // 2. Masukkan data baru ke urutan paling atas daftar history
-    setHistoryData([newAttendance, ...historyData]);
-
-    // 3. Kunci tombol Check In
-    setIsCheckedIn(true);
-    Alert.alert("Sukses", `Berhasil Check In pada pukul ${currentTime}`);
+  const newAttendance = {
+    id: Date.now().toString(),
+    course: "Mobile Programming",
+    date: new Date().toLocaleDateString('id-ID'),
+    status: "Present",
+    // Anda juga bisa menambahkan properti catatan ke objek jika ingin ditampilkan
   };
+
+  setHistoryData([newAttendance, ...historyData]);
+  setIsCheckedIn(true);
+  Alert.alert("Sukses", `Berhasil Check In pada pukul ${currentTime}`);
+};
 
   const renderItem = ({ item }) => (
     <View style={styles.item}>
@@ -107,36 +127,59 @@ const Home = () => {
         </View>
 
         {/* Today's Class */}
-        <View style={styles.classCard}>
-          <Text style={styles.subtitle}>Today's Class</Text>
-          <Text>Mobile Programming</Text>
-          <Text>08:00 - 10:00</Text>
-          <Text>Lab 3</Text>
+       {/* Today's Class */}
+      <View style={styles.classCard}>
+        <Text style={styles.subtitle}>Today's Class</Text>
+        <Text>Mobile Programming</Text>
+        <Text>08:00 - 10:00</Text>
+        <Text>Lab 3</Text>
 
-          {/* Modifikasi Tombol Check In */}
-          <TouchableOpacity
-            style={[styles.button, isCheckedIn ? styles.buttonDisabled : styles.buttonActive]}
-            onPress={handleCheckIn}
-            disabled={isCheckedIn} // Matikan fungsi klik jika sudah absen
-          >
-            <Text style={styles.buttonText}>
-              {isCheckedIn ? "CHECKED IN" : "CHECK IN"}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Attendance History */}
-        <View style={styles.classCard}>
-          <Text style={styles.subtitle}>Attendance History</Text>
-
-          <FlatList
-            data={historyData} // Ubah 'history' menjadi 'historyData'
-            keyExtractor={(item) => item.id}
-            renderItem={renderItem}
-            scrollEnabled={false}
+        {/* Fitur Baru: Kolom Input Catatan dengan useRef */}
+        {!isCheckedIn && (
+          <TextInput
+            ref={noteInputRef} // <-- Menempelkan referensi ke elemen ini
+            style={styles.inputCatatan}
+            placeholder="Tulis catatan (cth: Hadir lab)"
+            value={note}
+            onChangeText={setNote}
           />
+        )}
+
+        <TouchableOpacity
+          style={[styles.button, isCheckedIn ? styles.buttonDisabled : styles.buttonActive]}
+          onPress={handleCheckIn}
+          disabled={isCheckedIn}
+        >
+          <Text style={styles.buttonText}>
+            {isCheckedIn ? "CHECKED IN" : "CHECK IN"}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Fitur Baru: Statistik Kehadiran (Hasil useMemo) */}
+      <View style={styles.statsCard}>
+        <View style={styles.statBox}>
+          <Text style={styles.statNumber}>{attendanceStats.totalPresent}</Text>
+          <Text style={styles.statLabel}>Total Present</Text>
         </View>
-      </ScrollView>
+        <View style={styles.statBox}>
+          <Text style={[styles.statNumber, { color: 'red' }]}>{attendanceStats.totalAbsent}</Text>
+          <Text style={styles.statLabel}>Total Absent</Text>
+        </View>
+      </View>
+
+      {/* Attendance History */}
+      <View style={styles.classCard}>
+        <Text style={styles.subtitle}>Attendance History</Text>
+        
+        <FlatList
+          data={historyData} // <-- Ubah 'history' menjadi 'historyData'
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          scrollEnabled={false}
+        />
+      </View>
+    </ScrollView>
     </SafeAreaView>
   );
 };
@@ -295,5 +338,33 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     backgroundColor: "#A0C4FF", // Warna lebih pucat saat disable
+  },
+  inputCatatan: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    padding: 10,
+    marginTop: 15,
+    backgroundColor: '#fafafa',
+  },
+  statsCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    backgroundColor: "white",
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 20,
+  },
+  statBox: {
+    alignItems: 'center',
+  },
+  statNumber: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: 'green',
+  },
+  statLabel: {
+    fontSize: 14,
+    color: 'gray',
   },
 });
