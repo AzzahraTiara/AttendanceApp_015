@@ -60,9 +60,9 @@ const HomeScreen = () => {
             <MaterialIcons name="person" size={40} color="#555" />
           </View>
           <View>
-            <Text style={styles.name}>Budi Susanto</Text>
-            <Text>NIM : 0325260031</Text>
-            <Text>Class : Informatika-2B</Text>
+            <Text style={styles.name}>Azzahra Tiara Putri</Text>
+            <Text>NIM : 0320240015</Text>
+            <Text>Class : Informatika-2A</Text>
           </View>
         </View>
 
