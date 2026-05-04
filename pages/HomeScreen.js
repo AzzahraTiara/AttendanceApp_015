@@ -2,81 +2,147 @@ import React, {
   useState,
   useEffect,
   useMemo,
-  useRef} from "react";
-import { View, Text, SafeAreaView, StyleSheet,
+  useRef,
+  useContext
+} from "react";
+
+import {
+  View,
+  Text,
+  SafeAreaView,
+  StyleSheet,
   TouchableOpacity,
   ScrollView,
   Alert,
-  TextInput} from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+  TextInput,
+  ActivityIndicator
+} from "react-native";
 
-const HomeScreen = () => {
+import { MaterialIcons } from "@expo/vector-icons";
+import { AuthContext } from "../context/AuthContext";
 
-  // 2. STATE UNTUK STATUS TOMBOL CHECK-IN
+// Konfigurasi
+const BASE_URL = "http://192.168.1.18:8080/api/presensi";
+const AUTH_CODE = "astratech@123";
+
+const HomeScreen = ({ navigation }) => {
+
+  const { userData, logout } = useContext(AuthContext);
+
   const [isCheckedIn, setIsCheckedIn] = useState(false);
-
-  // 3. STATE UNTUK JAM DIGITAL
-  const [currentTime, setCurrentTime] = useState('Memuat jam...');
-
-  // 4. STATE & REF UNTUK CATATAN (Baru)
+  const [currentTime, setCurrentTime] = useState("Memuat jam...");
   const [note, setNote] = useState('');
-  const noteInputRef = useRef(null); // Membuat "kait" kosong untuk UI
+  const [isPosting, setIsPosting] = useState(false);
+  const noteInputRef = useRef(null);
 
-  // Simulasi statis karena data dipindah ke HistoryScreen
   const attendanceStats = useMemo(() => {
     return { totalPresent: 12, totalAbsent: 2 };
   }, []);
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentTime(new Date().toLocaleTimeString('id-ID'));
+      setCurrentTime(new Date().toLocaleTimeString("id-ID"));
     }, 1000);
+
     return () => clearInterval(timer);
   }, []);
 
-  const handleCheckIn = () => {
-    if (isCheckedIn) return Alert.alert("Perhatian", "Anda sudah Check In.");
-    if (note.trim() === '') {
+  const handleCheckIn = async () => {
+    if (isCheckedIn)
+      return Alert.alert("Perhatian", "Anda sudah Check In.");
+
+    if (note.trim() === "") {
       Alert.alert("Peringatan", "Catatan kehadiran wajib diisi!");
       noteInputRef.current.focus();
       return;
     }
-    setIsCheckedIn(true);
-    Alert.alert("Sukses", `Berhasil Check In pada pukul ${currentTime}`);
+
+    setIsPosting(true);
+    const now = new Date();
+
+    // ✅ PERBAIKAN: Hanya kirim field yang ada di entity Presensi
+    const payload = {
+      kodeMk: "TRPL205",
+      course: "Mobile Programming",
+      status: "Present",
+      nimMhs: userData?.mhsNim,  // ✅ perbaiki: mhsNim (bukan nim_mhs)
+      pertemuanKe: 5,
+      date: now.toISOString().split('T')[0],
+      jamPresensi: now.toLocaleTimeString('id-ID', { hour12: false }),
+      ruangan: "Lab Komputer 3",
+      dosenPengampu: "Tim Dosen TRPL"
+      // ❌ HAPUS: kode_qr (tidak ada di entity)
+      // ❌ HAPUS: catatan (tidak ada di entity)
+    };
+
+    try {
+      const response = await fetch(BASE_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'authcode': AUTH_CODE  // ✅ TAMBAHKAN authcode
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setIsCheckedIn(true);
+        Alert.alert("Berhasil!", "Presensi masuk ke Database Java Spring.", [
+          { text: "Lihat Riwayat", onPress: () => navigation.navigate('HistoryTab') }
+        ]);
+      } else {
+        Alert.alert("Gagal", result.message || "Terjadi kesalahan di server.");
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Error Jaringan", "Pastikan IP Laptop benar dan Spring Boot berjalan.");
+    } finally {
+      setIsPosting(false);
+    }
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
+
+        {/* Header Row dengan Tombol Logout */}
         <View style={styles.headerRow}>
-          <Text style={styles.title}>Attendance App</Text>
-          {/* Tampilkan State Jam Digital */}
-          <Text style={styles.clockText}>{currentTime}</Text>
+          <View>
+            <Text style={styles.title}>Attendance App</Text>
+            <Text style={styles.clockText}>{currentTime}</Text>
+          </View>
+
+          <TouchableOpacity onPress={logout} style={styles.logoutButton}>
+            <Text style={styles.logoutText}>Logout</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Student Card */}
+        {/* Student Card - ✅ Perbaiki akses userData */}
         <View style={styles.card}>
           <View style={styles.icon}>
             <MaterialIcons name="person" size={40} color="#555" />
           </View>
+
           <View>
-            <Text style={styles.name}>Azzahra Tiara Putri</Text>
-            <Text>NIM : 0320240015</Text>
-            <Text>Class : Informatika-2A</Text>
+            <Text style={styles.name}>{userData?.mhsName || "Mahasiswa"}</Text>
+            <Text>NIM : {userData?.mhsNim || "-"}</Text>
+            <Text>Prodi : {userData?.prodi || "Informatika-2A"}</Text>
           </View>
         </View>
 
         {/* Today's Class */}
         <View style={styles.classCard}>
           <Text style={styles.subtitle}>Today's Class</Text>
-          <Text>Mobile Programming</Text>
+          <Text>Mobile Programming (TRPL205)</Text>
           <Text>08:00 - 10:00</Text>
           <Text>Lab 3</Text>
 
-          {/* Fitur Baru: Kolom Input Catatan dengan useRef */}
           {!isCheckedIn && (
             <TextInput
-              ref={noteInputRef} // <-- Menempelkan referensi ke elemen ini
+              ref={noteInputRef}
               style={styles.inputCatatan}
               placeholder="Tulis catatan (cth: Hadir lab)"
               value={note}
@@ -84,18 +150,25 @@ const HomeScreen = () => {
             />
           )}
 
-          <TouchableOpacity
-            style={[styles.button, isCheckedIn ? styles.buttonDisabled : styles.buttonActive]}
-            onPress={handleCheckIn}
-            disabled={isCheckedIn}
-          >
-            <Text style={styles.buttonText}>
-              {isCheckedIn ? "CHECKED IN" : "CHECK IN"}
-            </Text>
-          </TouchableOpacity>
+          {isPosting ? (
+            <ActivityIndicator size="large" color="#007AFF" style={{ marginTop: 15 }} />
+          ) : (
+            <TouchableOpacity
+              style={[
+                styles.button,
+                isCheckedIn ? styles.buttonDisabled : styles.buttonActive
+              ]}
+              onPress={handleCheckIn}
+              disabled={isCheckedIn}
+            >
+              <Text style={styles.buttonText}>
+                {isCheckedIn ? "CHECKED IN" : "CHECK IN"}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
 
-        {/* Fitur Baru: Statistik Kehadiran (Hasil useMemo) */}
+        {/* Stats Card */}
         <View style={styles.statsCard}>
           <View style={styles.statBox}>
             <Text style={styles.statNumber}>{attendanceStats.totalPresent}</Text>
@@ -106,38 +179,46 @@ const HomeScreen = () => {
             <Text style={styles.statLabel}>Total Absent</Text>
           </View>
         </View>
+
       </ScrollView>
     </SafeAreaView>
   );
 };
 
-export default HomeScreen;
-
 const styles = StyleSheet.create({
- container: { flex: 1, padding: 15 },
- title: { fontSize: 22, fontWeight: "bold" },
- subtitle: { marginBottom: 10, color: "#666" },
- card: {
- flexDirection: "row",
- padding: 12,
- marginBottom: 8,
- borderRadius: 8,
- backgroundColor: "#f2f2f2",
- },
- id: { width: 40, color: "#888" },
- name: { fontWeight: "bold" },
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
   },
   content: {
     padding: 20,
-    paddingBottom: 40,
+  },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
-    marginBottom: 15,
+  },
+  clockText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#007AFF",
+  },
+  logoutButton: {
+    marginLeft: 12,
+    backgroundColor: "#d9534f",
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+  },
+  logoutText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 12,
   },
   card: {
     flexDirection: "row",
@@ -145,14 +226,15 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 10,
     marginBottom: 20,
+    elevation: 2,
   },
   icon: {
     width: 60,
     height: 60,
     borderRadius: 30,
     backgroundColor: "#eee",
-    alignItems: "center",
     justifyContent: "center",
+    alignItems: "center",
     marginRight: 15,
   },
   name: {
@@ -164,116 +246,58 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 10,
     marginBottom: 20,
-  },
-  summaryCard: {
-    backgroundColor: "white",
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 20,
-  },
-  summaryRow: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-  },
-  summaryItem: {
-    alignItems: "center",
-  },
-  summaryLabel: {
-    fontSize: 14,
-    color: "gray",
-  },
-  summaryValue: {
-    fontSize: 20,
-    fontWeight: "bold",
+    elevation: 2,
   },
   subtitle: {
     fontSize: 18,
     fontWeight: "bold",
     marginBottom: 10,
   },
-  button: {
+  inputCatatan: {
     marginTop: 10,
-    backgroundColor: "#007AFF",
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
     padding: 10,
+    backgroundColor: "#fafafa",
+  },
+  button: {
+    marginTop: 15,
+    padding: 12,
     borderRadius: 8,
     alignItems: "center",
+  },
+  buttonActive: {
+    backgroundColor: "#007BFF",
+  },
+  buttonDisabled: {
+    backgroundColor: "#A0C4FF",
   },
   buttonText: {
     color: "white",
     fontWeight: "bold",
   },
-  item: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    backgroundColor: "white",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 8,
-    alignItems: "center",
-  },
-  course: {
-    fontSize: 16,
-  },
-  date: {
-    fontSize: 12,
-    color: "gray",
-  },
-  statusRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  present: {
-    color: "green",
-    fontWeight: "bold",
-  },
-  absent: {
-    color: "red",
-    fontWeight: "bold",
-  },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  clockText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#007AFF',
-    fontVariant: ['tabular-nums'],
-  },
-  buttonActive: {
-    backgroundColor: "#007AFF",
-  },
-  buttonDisabled: {
-    backgroundColor: "#A0C4FF", // Warna lebih pucat saat disable
-  },
-  inputCatatan: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    padding: 10,
-    marginTop: 15,
-    backgroundColor: '#fafafa',
-  },
   statsCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+    flexDirection: "row",
+    justifyContent: "space-around",
     backgroundColor: "white",
     padding: 15,
     borderRadius: 10,
     marginBottom: 20,
+    elevation: 2,
   },
   statBox: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   statNumber: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: 'green',
   },
   statLabel: {
     fontSize: 14,
-    color: 'gray',
+    color: "gray",
   },
 });
+
+export default HomeScreen;
