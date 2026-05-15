@@ -7,7 +7,6 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { AuthContext } from '../context/AuthContext';
 
-// Konfigurasi
 const BASE_URL = "http://192.168.1.18:8080/api/presensi";
 const AUTH_CODE = "astratech@123";
 
@@ -29,7 +28,7 @@ export default function HistoryScreen({ navigation }) {
     setIsLoading(true);
 
     try {
-      // ✅ TAMBAHKAN HEADER authcode
+      
       const response = await fetch(
         `${BASE_URL}/history/${userData?.mhsNim}?page=${targetPage}&size=10`,
         {
@@ -40,7 +39,7 @@ export default function HistoryScreen({ navigation }) {
       );
       const json = await response.json();
 
-      // Spring Boot Pageable menyimpan array di dalam properti 'content'
+      
       const newItems = json.content;
 
       if (targetPage === 0) {
@@ -60,7 +59,6 @@ export default function HistoryScreen({ navigation }) {
     }
   };
 
-  // Otomatis refresh saat layar dibuka
   useFocusEffect(
     useCallback(() => {
       if (userData?.mhsNim) {

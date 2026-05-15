@@ -3,7 +3,7 @@ import { View, TextInput, Button, Alert } from "react-native";
 import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
 
-// ⚠️ GANTI sesuai IP backend kamu
+
 const BASE_URL = "http://192.168.1.18:8080/api/user";
 
 export default function LoginScreen() {
