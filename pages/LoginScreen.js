@@ -1,10 +1,15 @@
 import React, { useState, useContext } from "react";
-import { View, TextInput, Button, Alert } from "react-native";
+import {
+  View,
+  TextInput,
+  Button,
+  Alert,
+  StyleSheet,
+} from "react-native";
 import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
 
-
-const BASE_URL = "http://192.168.1.18:8080/api/user";
+const BASE_URL = "http://192.168.1.8:8080/api/user";
 
 export default function LoginScreen() {
   const { login } = useContext(AuthContext);
@@ -42,23 +47,46 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={{ padding: 20 }}>
-      <TextInput
-        placeholder="NIM"
-        value={nim}
-        onChangeText={setNim}
-        style={{ borderWidth: 1, marginBottom: 10, padding: 10 }}
-      />
+    <View style={styles.container}>
+      <View style={styles.form}>
+        <TextInput
+          placeholder="NIM"
+          value={nim}
+          onChangeText={setNim}
+          style={styles.input}
+        />
 
-      <TextInput
-        placeholder="Password"
-        value={password}
-        secureTextEntry
-        onChangeText={setPassword}
-        style={{ borderWidth: 1, marginBottom: 10, padding: 10 }}
-      />
+        <TextInput
+          placeholder="Password"
+          value={password}
+          secureTextEntry
+          onChangeText={setPassword}
+          style={styles.input}
+        />
 
-      <Button title="Login" onPress={handleLogin} />
+        <Button title="Login" onPress={handleLogin} />
+      </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center", // tengah vertikal
+    alignItems: "center", // tengah horizontal
+    backgroundColor: "#fff",
+  },
+
+  form: {
+    width: "80%",
+  },
+
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    marginBottom: 15,
+    padding: 12,
+    borderRadius: 8,
+  },
+});

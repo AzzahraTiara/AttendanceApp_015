@@ -4,12 +4,14 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { MaterialIcons } from "@expo/vector-icons";
+import { SafeAreaProvider } from 'react-native-safe-area-context'; // TAMBAHKAN
 
 import { AuthProvider, AuthContext } from "./context/AuthContext";
 import LoginScreen from "./pages/LoginScreen";
 import HomeScreen from "./pages/HomeScreen";
 import HistoryScreen from "./pages/HistoryScreen";
 import DetailScreen from "./pages/DetailScreen";
+import AboutScreen from "./pages/AboutScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -32,6 +34,19 @@ function HistoryStack() {
   );
 }
 
+// ================ ABOUT STACK ================
+function AboutStack() {
+  return (
+    <Stack.Navigator>
+      <Stack.Screen
+        name="AboutScreen" 
+        component={AboutScreen}
+        options={{ title: "Profil Mahasiswa" }}
+      />
+    </Stack.Navigator>
+  );
+}
+
 // ================ TAB ================
 function AppTabs() {
   return (
@@ -45,9 +60,9 @@ function AppTabs() {
         name="Home"
         component={HomeScreen}
         options={{
-          tabBarLabel: "Beranda",
+          tabBarLabel: "Scanner",
           tabBarIcon: ({ color }) => (
-            <MaterialIcons name="home" size={24} color={color} />
+            <MaterialIcons name="qr-code-scanner" size={24} color={color} />
           ),
         }}
       />
@@ -62,9 +77,21 @@ function AppTabs() {
           ),
         }}
       />
+
+      <Tab.Screen
+        name="Profile" // UBAH: dari "About" jadi "Profile" biar tidak bentrok
+        component={AboutStack}
+        options={{
+          tabBarLabel: "Profil",
+          tabBarIcon: ({ color }) => (
+            <MaterialIcons name="person" size={24} color={color} />
+          ),
+        }}
+      />
     </Tab.Navigator>
   );
 }
+
 // ================ AUTH STACK ================
 function AuthStack() {
   return (
@@ -85,9 +112,11 @@ function MainApp() {
   if (loading) return <Text>Loading...</Text>;
 
   return (
-    <NavigationContainer>
-      {userData ? <AppTabs /> : <AuthStack />}
-    </NavigationContainer>
+    <SafeAreaProvider> {/* TAMBAHKAN SafeAreaProvider */}
+      <NavigationContainer>
+        {userData ? <AppTabs /> : <AuthStack />}
+      </NavigationContainer>
+    </SafeAreaProvider>
   );
 }
 

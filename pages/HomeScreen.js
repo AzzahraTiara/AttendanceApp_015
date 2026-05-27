@@ -1,29 +1,28 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Button } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 
 export default function HomeScreen() {
     const navigation = useNavigation();
     const [permission, requestPermission] = useCameraPermissions();
-    const [scannedData, setScannedData] = useState(null);
     const [isScanning, setIsScanning] = useState(true);
     const [isCheckedIn, setIsCheckedIn] = useState(false);
+    
+    // REF untuk mencegah double scan
+    const isProcessingRef = useRef(false);
 
     // GANTI DENGAN IP LAPTOP MASING-MASING
-    const BASE_URL = "http://10.1.11.81:8080/api/presensi";
-    // const BASE_URL = "http://localhost:5137/api/Presensi";
+    const BASE_URL = "http://192.168.1.8:8080/api/presensi";
 
-    // 1. Jika status permission masih loading
     if (!permission) {
         return (
             <View style={styles.container}>
-                <Text>Memuat perizinan kamera...</Text>
+                <Text style={styles.infoText}>Memuat perizinan kamera...</Text>
             </View>
         );
     }
 
-    // 2. Jika user belum memberikan izin atau menolak
     if (!permission.granted) {
         return (
             <View style={styles.container}>
@@ -37,14 +36,18 @@ export default function HomeScreen() {
         );
     }
 
-    // Fungsi submit presensi ke backend
     const handleSubmitPresensi = async (qrData) => {
-        const payload = {
-            kodeMk: qrData.kodeMk,
-            pertemuanKe: qrData.pertemuanKe,
-            ruangan: qrData.ruangan,
-            waktu: new Date().toISOString()
-        };
+        // Di dalam handleSubmitPresensi di HomeScreen.js
+const payload = {
+    kodeMk: qrData.kodeMk,
+    namaMk: qrData.namaMk, // TAMBAHKAN INI!
+    nimMhs: "0325260031",
+    pertemuanKe: qrData.pertemuanKe,
+    date: new Date().toISOString().split('T')[0],
+    jamPresensi: new Date().toLocaleTimeString('id-ID'),
+    status: "Present",
+    ruangan: qrData.ruangan
+};
 
         try {
             const response = await fetch(BASE_URL, {
@@ -60,7 +63,7 @@ export default function HomeScreen() {
             if (response.ok) {
                 setIsCheckedIn(true);
                 Alert.alert("Berhasil!", "Presensi sukses dicatat ke Database.", [
-                    { text: "Lihat Riwayat", onPress: () => navigation.navigate('HistoryTab') }
+                    { text: "Lihat Riwayat", onPress: () => navigation.navigate('History') }
                 ]);
             } else {
                 Alert.alert("Gagal", result.message || "Terjadi kesalahan di server.");
@@ -69,19 +72,23 @@ export default function HomeScreen() {
             Alert.alert("Error Jaringan", "Pastikan IP Laptop benar dan API berjalan.");
             console.error(error);
         } finally {
+            // Reset state setelah proses selesai
             setIsScanning(true);
-            setScannedData(null);
+            isProcessingRef.current = false;
         }
     };
 
-    // 3. Fungsi saat QR Code terdeteksi kamera
-    const handleBarCodeScanned = ({ type, data }) => {
-        if (!isScanning) return;
+    // Fungsi saat QR Code terdeteksi - DILENGKAPI PENCEGAHAN DOBEL
+    const handleBarCodeScanned = (result) => {
+        // CEK: jika tidak scanning ATAU sedang memproses, IGNORE
+        if (!isScanning || isProcessingRef.current) return;
+        
+        // Langsung lock agar tidak bisa scan lagi
         setIsScanning(false);
+        isProcessingRef.current = true;
 
         try {
-            const qrData = JSON.parse(data);
-            setScannedData(qrData);
+            const qrData = JSON.parse(result.data);
 
             Alert.alert(
                 "QR Code Terdeteksi",
@@ -91,7 +98,7 @@ export default function HomeScreen() {
                         text: "Batal",
                         onPress: () => {
                             setIsScanning(true);
-                            setScannedData(null);
+                            isProcessingRef.current = false;
                         },
                         style: "cancel"
                     },
@@ -104,10 +111,10 @@ export default function HomeScreen() {
         } catch (error) {
             Alert.alert("QR Tidak Valid", "Pastikan Anda memindai QR Code Presensi Dosen.");
             setIsScanning(true);
+            isProcessingRef.current = false;
         }
     };
 
-    // 5. Render UI
     return (
         <View style={styles.container}>
             <CameraView
@@ -117,31 +124,34 @@ export default function HomeScreen() {
                 barcodeScannerSettings={{
                     barcodeTypes: ["qr"],
                 }}
-            >
-                {/* Desain Overlay Kotak Pemandu di tengah layar */}
-                <View style={styles.overlay}>
-                    <View style={styles.unfocusedContainer}></View>
-                    <View style={styles.focusedContainer}>
-                        <View style={styles.borderCornerTopLeft} />
-                        <View style={styles.borderCornerTopRight} />
-                        <View style={styles.borderCornerBottomLeft} />
-                        <View style={styles.borderCornerBottomRight} />
-                    </View>
+            />
+            
+            <View style={styles.overlay}>
+                <View style={styles.unfocusedContainerTop}></View>
+                
+                <View style={styles.focusedContainer}>
+                    <View style={styles.borderCornerTopLeft} />
+                    <View style={styles.borderCornerTopRight} />
+                    <View style={styles.borderCornerBottomLeft} />
+                    <View style={styles.borderCornerBottomRight} />
                 </View>
-                <View style={styles.unfocusedContainer}>
+                
+                <View style={styles.unfocusedContainerBottom}>
                     <Text style={styles.scanText}>Arahkan Kamera ke QR Code Dosen</Text>
+                    
+                    {!isScanning && (
+                        <TouchableOpacity 
+                            style={styles.scanAgainButton} 
+                            onPress={() => {
+                                setIsScanning(true);
+                                isProcessingRef.current = false;
+                            }}
+                        >
+                            <Text style={styles.scanAgainText}>Scan Lagi</Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
-
-                {/* Tombol darurat jika scanner terkunci */}
-                {!isScanning && (
-                    <TouchableOpacity 
-                        style={styles.scanAgainButton} 
-                        onPress={() => setIsScanning(true)}
-                    >
-                        <Text style={styles.scanAgainText}>Scan Lagi</Text>
-                    </TouchableOpacity>
-                )}
-            </CameraView>
+            </View>
         </View>
     );
 }
@@ -150,6 +160,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: 'black',
+        position: 'relative',
     },
     infoText: {
         color: 'white',
@@ -167,22 +178,30 @@ const styles = StyleSheet.create({
         color: 'white',
         fontWeight: 'bold',
     },
-    // Styling Overlay Scanner
     overlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)', // Latar gelap transparan
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.5)',
     },
-    unfocusedContainer: {
+    unfocusedContainerTop: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
     },
     focusedContainer: {
-        width: 250, // Ukuran kotak pemandu
+        width: 250,
         height: 250,
         alignSelf: 'center',
         backgroundColor: 'transparent',
         position: 'relative',
+    },
+    unfocusedContainerBottom: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     scanText: {
         color: 'white',
@@ -192,8 +211,8 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0,0,0,0.7)',
         padding: 10,
         borderRadius: 5,
+        textAlign: 'center',
     },
-    // Membuat Sudut Kotak Biru
     borderCornerTopLeft: {
         position: 'absolute',
         top: 0,
@@ -236,9 +255,10 @@ const styles = StyleSheet.create({
     },
     scanAgainButton: {
         backgroundColor: '#ffc107',
-        padding: 12,
-        borderRadius: 8,
-        margin: 20,
+        paddingVertical: 12,
+        paddingHorizontal: 25,
+        borderRadius: 10,
+        marginTop: 20,
         alignItems: 'center',
     },
     scanAgainText: {
@@ -247,4 +267,3 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
 });
-
