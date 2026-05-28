@@ -7,7 +7,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { AuthContext } from '../context/AuthContext';
 
-const BASE_URL = "http://192.168.1.8:8080/api/presensi";
+const BASE_URL = "http://172.20.10.2:8080/api/presensi";
 const AUTH_CODE = "astratech@123";
 
 export default function HistoryScreen({ navigation }) {

@@ -79,7 +79,7 @@ function AppTabs() {
       />
 
       <Tab.Screen
-        name="Profile" // UBAH: dari "About" jadi "Profile" biar tidak bentrok
+        name="Profile" 
         component={AboutStack}
         options={{
           tabBarLabel: "Profil",

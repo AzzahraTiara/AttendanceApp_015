@@ -13,7 +13,7 @@ export default function HomeScreen() {
     const isProcessingRef = useRef(false);
 
     // GANTI DENGAN IP LAPTOP MASING-MASING
-    const BASE_URL = "http://192.168.1.8:8080/api/presensi";
+    const BASE_URL = "http://172.20.10.2:8080/api/presensi";
 
     if (!permission) {
         return (

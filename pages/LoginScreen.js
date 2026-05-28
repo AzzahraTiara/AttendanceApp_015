@@ -9,7 +9,7 @@ import {
 import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
 
-const BASE_URL = "http://192.168.1.8:8080/api/user";
+const BASE_URL = "http://172.20.10.2:8080/api/user";
 
 export default function LoginScreen() {
   const { login } = useContext(AuthContext);
