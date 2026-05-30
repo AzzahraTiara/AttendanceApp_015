@@ -13,7 +13,7 @@ export default function AboutScreen() {
     const cameraRef = useRef(null);
 
     const NIM_USER = "0325260031"; // Simulasi NIM Mahasiswa
-    const BASE_URL = "http://172.20.10.2:8080/api/mahasiswa";
+    const BASE_URL = "http://192.168.1.9:8080/api/mahasiswa";
 
     // 2. Load Foto dari API
     useEffect(() => {

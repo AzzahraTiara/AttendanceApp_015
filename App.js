@@ -12,6 +12,7 @@ import HomeScreen from "./pages/HomeScreen";
 import HistoryScreen from "./pages/HistoryScreen";
 import DetailScreen from "./pages/DetailScreen";
 import AboutScreen from "./pages/AboutScreen";
+import LocationScreen from "./pages/LocationScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -63,6 +64,18 @@ function AppTabs() {
           tabBarLabel: "Scanner",
           tabBarIcon: ({ color }) => (
             <MaterialIcons name="qr-code-scanner" size={24} color={color} />
+          ),
+        }}
+      />
+
+      {/* BERHASIL DITAMBAHKAN: Location Screen */}
+      <Tab.Screen
+        name="Location"
+        component={LocationScreen}
+        options={{
+          tabBarLabel: "Lokasi",
+          tabBarIcon: ({ color }) => (
+            <MaterialIcons name="my-location" size={24} color={color} />
           ),
         }}
       />
