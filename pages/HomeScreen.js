@@ -68,13 +68,13 @@ export default function HomeScreen() {
                 return;
             }
 
-            let currentLocatlon = await Location.getCurrentPositionAsync({
+            let currentLocation = await Location.getCurrentPositionAsync({
                 accuracy: Location.Accuracy.High
             });
 
             const jarakMeter = calculateDistance(
-                currentLocatlon.coords.latitude,
-                currentLocatlon.coords.longitude,
+                currentLocation.coords.latitude,
+                currentLocation.coords.longitude,
                 KAMPUS_LAT,
                 KAMPUS_LON
             );

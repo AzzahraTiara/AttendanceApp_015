@@ -20,13 +20,25 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
-      }
+      },
+      "package": "com.attendanceapp",
+      "googleServicesFile": "./pages/P9_2_Notification/google-services.json",
+      "edgeToEdgeEnabled": true
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    
     "plugins": [
-      "expo-asset"
+      [
+        "@react-native-firebase/app",
+        {
+          "android": {
+            "googleServicesFile": "./pages/P9_2_Notification/google-services.json"
+          }
+        }
+      ],
+      "@react-native-firebase/messaging"
     ]
   }
 }
